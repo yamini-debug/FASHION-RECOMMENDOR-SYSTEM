@@ -172,6 +172,9 @@ def save_uploaded_file(uploaded_file):
 
     try:
 
+        # uploads folder automatically create karega
+        os.makedirs('uploads', exist_ok=True)
+
         save_path = os.path.join(
             'uploads',
             uploaded_file.name
@@ -183,7 +186,9 @@ def save_uploaded_file(uploaded_file):
 
         return save_path
 
-    except:
+    except Exception as e:
+
+        st.error(f"Upload Error: {e}")
 
         return None
 
@@ -275,31 +280,31 @@ if uploaded_file is not None:
 
         with rec1:
             st.image(
-                filenames[indices[0][1]],
+                str(filenames[indices[0][1]]),
                 use_container_width=True
             )
 
         with rec2:
             st.image(
-                filenames[indices[0][2]],
+                str(filenames[indices[0][2]]),
                 use_container_width=True
             )
 
         with rec3:
             st.image(
-                filenames[indices[0][3]],
+                str(filenames[indices[0][3]]),
                 use_container_width=True
             )
 
         with rec4:
             st.image(
-                filenames[indices[0][4]],
+                str(filenames[indices[0][4]]),
                 use_container_width=True
             )
 
         with rec5:
             st.image(
-                filenames[indices[0][5]],
+                str(filenames[indices[0][5]]),
                 use_container_width=True
             )
 

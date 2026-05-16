@@ -18,101 +18,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- CUSTOM CSS ----------------
-
-st.markdown("""
-<style>
-
-.stApp {
-    background: linear-gradient(to bottom right, #f8fafc, #eef2ff);
-}
-
-/* Main Heading */
-
-.main-title {
-    text-align: center;
-    font-size: 58px;
-    font-weight: 800;
-    color: #111827;
-    margin-bottom: 10px;
-}
-
-.sub-title {
-    text-align: center;
-    font-size: 20px;
-    color: #6b7280;
-    margin-bottom: 40px;
-}
-
-/* Upload Box */
-
-div[data-testid="stFileUploader"] {
-    background: white;
-    padding: 25px;
-    border-radius: 20px;
-    border: 2px dashed #a78bfa;
-    box-shadow: 0px 8px 25px rgba(0,0,0,0.06);
-}
-
-/* Images */
-
-.stImage img {
-    border-radius: 18px;
-    transition: 0.3s;
-}
-
-.stImage img:hover {
-    transform: scale(1.03);
-}
-
-/* Recommendation Heading */
-
-.recommendation-heading {
-    font-size: 32px;
-    font-weight: 700;
-    color: #111827;
-    margin-top: 20px;
-    margin-bottom: 20px;
-}
-
-/* Success Message */
-
-.success-box {
-    background: #ecfdf5;
-    padding: 15px;
-    border-radius: 12px;
-    color: #065f46;
-    font-weight: 600;
-    margin-top: 15px;
-}
-
-/* Spinner */
-
-.stSpinner > div {
-    border-top-color: #8b5cf6 !important;
-}
-
-/* Buttons */
-
-.stButton button {
-    border-radius: 12px;
-    border: none;
-    background: linear-gradient(to right, #8b5cf6, #6366f1);
-    color: white;
-    font-weight: 600;
-    padding: 0.5rem 1.2rem;
-}
-
-/* Remove Streamlit top spacing */
-
-.block-container {
-    padding-top: 2rem;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# ---------------- LOAD EMBEDDINGS ----------------
+# ---------------- LOAD FILES ----------------
 
 feature_list = np.array(
     pickle.load(open('embeddings.pkl', 'rb'))
@@ -122,7 +28,11 @@ filenames = pickle.load(
     open('filenames.pkl', 'rb')
 )
 
-# ---------------- LOAD MODEL ----------------
+# WINDOWS PATH -> LINUX PATH FIX
+
+filenames = [file.replace("\\", "/") for file in filenames]
+
+# ---------------- MODEL ----------------
 
 @st.cache_resource
 def load_model():
@@ -144,11 +54,11 @@ def load_model():
 
 model = load_model()
 
-# ---------------- NEIGHBOR MODEL ----------------
+# ---------------- NEIGHBORS ----------------
 
 neighbors = NearestNeighbors(
     n_neighbors=6,
-    algorithm='auto',
+    algorithm='brute',
     metric='euclidean'
 )
 
@@ -156,34 +66,31 @@ neighbors.fit(feature_list)
 
 # ---------------- HEADER ----------------
 
-st.markdown(
-    '<div class="main-title">Fashion Recommendation System</div>',
-    unsafe_allow_html=True
-)
+st.title("Fashion Recommendation System")
+st.write("Upload an image and get similar fashion recommendations.")
 
-st.markdown(
-    '<div class="sub-title">Discover visually similar fashion products using Deep Learning</div>',
-    unsafe_allow_html=True
-)
-
-# ---------------- SAVE FILE FUNCTION ----------------
+# ---------------- SAVE FILE ----------------
 
 def save_uploaded_file(uploaded_file):
 
     try:
 
-        save_path = os.path.join(
+        os.makedirs('uploads', exist_ok=True)
+
+        file_path = os.path.join(
             'uploads',
             uploaded_file.name
         )
 
-        with open(save_path, 'wb') as f:
+        with open(file_path, 'wb') as f:
 
             f.write(uploaded_file.getbuffer())
 
-        return save_path
+        return file_path
 
-    except:
+    except Exception as e:
+
+        st.error(f"Error Saving File: {e}")
 
         return None
 
@@ -216,7 +123,7 @@ def feature_extraction(img_path, model):
 
     return normalized_result
 
-# ---------------- RECOMMEND FUNCTION ----------------
+# ---------------- RECOMMEND ----------------
 
 def recommend(features):
 
@@ -227,32 +134,23 @@ def recommend(features):
 # ---------------- FILE UPLOADER ----------------
 
 uploaded_file = st.file_uploader(
-    "Upload an Image",
+    "Choose an image",
     type=['png', 'jpg', 'jpeg']
 )
 
-# ---------------- MAIN APP ----------------
+# ---------------- MAIN ----------------
 
 if uploaded_file is not None:
 
     saved_path = save_uploaded_file(uploaded_file)
 
-    if saved_path:
+    if saved_path is not None:
 
-        col1, col2 = st.columns([1, 2])
+        display_image = Image.open(uploaded_file)
 
-        with col1:
+        st.image(display_image, width='stretch')
 
-            st.subheader("Uploaded Image")
-
-            display_image = Image.open(uploaded_file)
-
-            st.image(
-                display_image,
-                use_container_width=True
-            )
-
-        with st.spinner("Analyzing image and finding recommendations..."):
+        with st.spinner('Finding similar products...'):
 
             features = feature_extraction(
                 saved_path,
@@ -261,48 +159,33 @@ if uploaded_file is not None:
 
             indices = recommend(features)
 
-        st.markdown(
-            '<div class="success-box">Recommendations generated successfully ✨</div>',
-            unsafe_allow_html=True
-        )
+        st.success('Recommendations generated successfully!')
 
-        st.markdown(
-            '<div class="recommendation-heading">Recommended Products</div>',
-            unsafe_allow_html=True
-        )
+        cols = st.columns(5)
 
-        rec1, rec2, rec3, rec4, rec5 = st.columns(5)
+        for i in range(5):
 
-        with rec1:
-            st.image(
-                filenames[indices[0][1]],
-                use_container_width=True
-            )
+            index = indices[0][i + 1]
 
-        with rec2:
-            st.image(
-                filenames[indices[0][2]],
-                use_container_width=True
-            )
+            image_path = filenames[index]
 
-        with rec3:
-            st.image(
-                filenames[indices[0][3]],
-                use_container_width=True
-            )
+            # EXTRA SAFETY CHECK
 
-        with rec4:
-            st.image(
-                filenames[indices[0][4]],
-                use_container_width=True
-            )
+            if os.path.exists(image_path):
 
-        with rec5:
-            st.image(
-                filenames[indices[0][5]],
-                use_container_width=True
-            )
+                with cols[i]:
+
+                    st.image(
+                        image_path,
+                        width='stretch'
+                    )
+
+            else:
+
+                with cols[i]:
+
+                    st.write("Image Missing")
 
     else:
 
-        st.error("Error uploading image.")
+        st.error("File upload failed.")

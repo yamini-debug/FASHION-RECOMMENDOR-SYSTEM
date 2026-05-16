@@ -86,23 +86,6 @@ div[data-testid="stFileUploader"] {
     margin-top: 15px;
 }
 
-/* Spinner */
-
-.stSpinner > div {
-    border-top-color: #8b5cf6 !important;
-}
-
-/* Buttons */
-
-.stButton button {
-    border-radius: 12px;
-    border: none;
-    background: linear-gradient(to right, #8b5cf6, #6366f1);
-    color: white;
-    font-weight: 600;
-    padding: 0.5rem 1.2rem;
-}
-
 /* Remove Streamlit top spacing */
 
 .block-container {
@@ -172,7 +155,6 @@ def save_uploaded_file(uploaded_file):
 
     try:
 
-        # uploads folder automatically create karega
         os.makedirs('uploads', exist_ok=True)
 
         save_path = os.path.join(
@@ -276,37 +258,43 @@ if uploaded_file is not None:
             unsafe_allow_html=True
         )
 
-        rec1, rec2, rec3, rec4, rec5 = st.columns(5)
+        cols = st.columns(5)
 
-        with rec1:
-            st.image(
-                str(filenames[indices[0][1]]),
-                use_container_width=True
-            )
+        recommendation_count = 0
 
-        with rec2:
-            st.image(
-                str(filenames[indices[0][2]]),
-                use_container_width=True
-            )
+        for i in range(1, len(indices[0])):
 
-        with rec3:
-            st.image(
-                str(filenames[indices[0][3]]),
-                use_container_width=True
-            )
+            try:
 
-        with rec4:
-            st.image(
-                str(filenames[indices[0][4]]),
-                use_container_width=True
-            )
+                image_path = str(filenames[indices[0][i]])
 
-        with rec5:
-            st.image(
-                str(filenames[indices[0][5]]),
-                use_container_width=True
-            )
+                # windows path ko linux compatible banayega
+                image_path = image_path.replace("\\", "/")
+
+                # sirf filename lega
+                image_name = os.path.basename(image_path)
+
+                # final repo image path
+                final_path = os.path.join("images", image_name)
+
+                # image exists check
+                if os.path.exists(final_path):
+
+                    with cols[recommendation_count]:
+
+                        st.image(
+                            final_path,
+                            use_container_width=True
+                        )
+
+                    recommendation_count += 1
+
+                if recommendation_count == 5:
+                    break
+
+            except Exception as e:
+
+                st.warning(f"Image Load Error: {e}")
 
     else:
 
